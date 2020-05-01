@@ -1,7 +1,12 @@
-all:main.cpp
-	g++ -c main.cpp
-	g++ main.o -o snake-game -lsfml-graphics -lsfml-window -lsfml-system
+all:
+	mkdir build
+	cd build
+	cmake ..
+	make
+	cd ..
 clean:
-	rm -f *.o snake-game
+	cd build
+	make clean
+	cd ..
 install:
 	sudo apt-get install libsfml-dev
