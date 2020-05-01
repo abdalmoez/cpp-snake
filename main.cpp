@@ -1,9 +1,13 @@
 #include <SFML/Graphics.hpp>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <ctime>
 #include <queue>
 #include <deque>
+#include "Globals.h"
+
+//GameState game_state = GAME_STATE_MAIN_MENU;
 
 template<typename T, typename Container=std::deque<T> >
 class iterable_queue : public std::queue<T,Container>
@@ -51,17 +55,12 @@ sf::View getLetterboxView(sf::View view, int windowWidth, int windowHeight) {
 
     return view;
 }
-const std::string Title;
-const int Width=640;
-const int Height=480;
-
-int scale=32;
 
 sf::RectangleShape* createCube(int x, int y, sf::Color color)
 {
-    sf::RectangleShape* shape = new sf::RectangleShape(sf::Vector2f(scale,scale));
+    sf::RectangleShape* shape = new sf::RectangleShape(sf::Vector2f(SCALE,SCALE));
     shape->setFillColor(color);
-    shape->setPosition(scale*x, scale*y);
+    shape->setPosition(SCALE*x, SCALE*y);
     return shape;
 }
 
@@ -95,21 +94,19 @@ class Snake
 
             sf::RectangleShape shape(sf::Vector2f(m_screenScale, m_screenScale));
             shape.setFillColor(sf::Color::Green);
-            shape.setPosition(scale*m_foodPosition.x, scale*m_foodPosition.y);
+            shape.setPosition(SCALE*m_foodPosition.x, SCALE*m_foodPosition.y);
             window.draw(shape);
             for(auto it=m_queue.begin(); it!=m_queue.end();++it)
             {
-                shape.setPosition(scale* ((*it)->x), scale*((*it)->y));
+                shape.setPosition(SCALE* ((*it)->x), SCALE*((*it)->y));
                 shape.setFillColor(sf::Color(0xFFE1D9C9));
                 window.draw(shape);        
             }
             shape.setFillColor(sf::Color(0xFF725a48));
-            shape.setPosition(scale*m_position.x, scale*m_position.y);
+            shape.setPosition(SCALE*m_position.x, SCALE*m_position.y);
             window.draw(shape);
-            
-            
-            
         }
+
         void update()
         {
             m_queue.push(new sf::Vector2f(m_position.x, m_position.y));
@@ -147,6 +144,17 @@ class Snake
                 m_queue.pop();
             }
         }
+
+        void onKeyPress(sf::Event& event)
+        {
+            switch (event.key.code)
+            {
+                case sf::Keyboard::Up:      up(); break;
+                case sf::Keyboard::Down:    down(); break;
+                case sf::Keyboard::Left:    left(); break;
+                case sf::Keyboard::Right:   right(); break;
+            }
+        }
         void up()       { if(m_orientation.y == 0)  { m_orientation.x= 0; m_orientation.y=-1; } }
         void down()     { if(m_orientation.y == 0)  { m_orientation.x= 0; m_orientation.y= 1; } }
         void left()     { if(m_orientation.x == 0)  { m_orientation.x=-1; m_orientation.y= 0; } }
@@ -169,17 +177,17 @@ class Snake
         sf::Clock m_clock; 
 };
 
-Snake snake(Width/scale, Height/scale);
+
 
 int main()
 {
     std::srand(std::time(nullptr)); // use current time as seed for random generator
-    sf::RenderWindow window(sf::VideoMode(Width, Height), Title);
+    sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), WINDOW_TITLE);
     window.setFramerateLimit(50);
     sf::View view;
-    view.setSize( Width, Height );
+    view.setSize( WIDTH, HEIGHT );
     view.setCenter( view.getSize().x / 2, view.getSize().y / 2 );
-    view = getLetterboxView( view, Width, Height );  
+    view = getLetterboxView( view, WIDTH, HEIGHT );  
 
     
     while (window.isOpen())
@@ -187,28 +195,60 @@ int main()
         sf::Event event;
         while (window.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed)
-                window.close();
-            if (event.type == sf::Event::KeyPressed)
+            switch (event.type)
             {
-                switch (event.key.code)
+                case sf::Event::Closed:
                 {
-                case sf::Keyboard::Up: snake.up(); break;
-                case sf::Keyboard::Down: snake.down(); break;
-                case sf::Keyboard::Left: snake.left(); break;
-                case sf::Keyboard::Right: snake.right(); break;
+                    window.close();
+                    break;
+                }                
+                case sf::Event::Resized:
+                {
+                    view = getLetterboxView( view, event.size.width, event.size.height );
+                    break;
                 }
             }
-            if(event.type == sf::Event::Resized)
+
+
+            
+            switch (event.type)
             {
-                view = getLetterboxView( view, event.size.width, event.size.height );
+                case sf::Event::KeyPressed:
+                {
+                    switch (game_state)
+                    {
+                        case GAME_STATE_INGAME:     snake.onKeyPress(event);      break;
+                        case GAME_STATE_MAIN_MENU:  mainMenu.onKeyPressed(event); break;
+                    }
+                    break;
+                }
+                case sf::Event::MouseMoved:
+                {
+                    switch (game_state)
+                    {
+                        case GAME_STATE_MAIN_MENU:  mainMenu.onMouseMove(event); break;
+                    }
+                    break;
+                } 
+                case sf::Event::MouseButtonPressed:
+                {
+                    switch (game_state)
+                    {
+                        case GAME_STATE_MAIN_MENU:  mainMenu.onMouseClick(event); break;
+                    }                    
+                    break;
+                } 
             }
         }
         
         window.clear();
         window.setView(view); 
-
-        snake.render(window);
+        
+        switch (game_state)
+        {
+            case GAME_STATE_INGAME:     snake.render(window);    break;
+            case GAME_STATE_MAIN_MENU:  mainMenu.render(window); break;
+        }
         window.display();
     }
 
