@@ -4,9 +4,10 @@
 Snake::Snake(int grid_width, int grid_height, int scale):
  m_position(grid_width/2,grid_height/2)
 ,m_orientation(1.0f,0.0f)
+,m_orientationChanged(false)
 ,m_foodPosition()
 ,m_queue()
-,m_speed(50)
+,m_speed(400)//Default 50
 ,m_gridWidth(grid_width)
 ,m_gridHeight(grid_height)
 ,m_screenScale(scale)
@@ -70,13 +71,14 @@ void Snake::update()
     m_queue.push(new sf::Vector2f(m_position.x, m_position.y));
 
     m_position = getNextStepCoord();
+    m_orientationChanged = false;
 
     bool food_was_found = m_position == m_foodPosition;
 
     if(food_was_found)
     {
         generateRandomFoodPosition();
-        m_speed+=50;
+        //m_speed+=50;
     }
     else
     {
@@ -96,34 +98,38 @@ void Snake::onKeyPress(sf::Event& event)
 }
 void Snake::up()
 { 
-    if(m_orientation.y == 0)
+    if(m_orientation.y == 0 && !m_orientationChanged)
     { 
         m_orientation.x= 0;
         m_orientation.y=-1;
+        m_orientationChanged = true;
     } 
 }
 void Snake::down()
 { 
-    if(m_orientation.y == 0)
+    if(m_orientation.y == 0 && !m_orientationChanged)
     { 
         m_orientation.x= 0;
         m_orientation.y= 1;
+        m_orientationChanged = true;
     }
 }
 void Snake::left()
 { 
-    if(m_orientation.x == 0)
+    if(m_orientation.x == 0 && !m_orientationChanged)
     { 
         m_orientation.x=-1;
         m_orientation.y= 0;
+        m_orientationChanged = true;
     }
 }
 void Snake::right()
 { 
-    if(m_orientation.x == 0)
+    if(m_orientation.x == 0 && !m_orientationChanged)
     { 
         m_orientation.x= 1;
         m_orientation.y= 0;
+        m_orientationChanged = true;
     }
 }
 
